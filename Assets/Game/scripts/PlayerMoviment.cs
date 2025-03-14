@@ -12,6 +12,8 @@ public class PlayerMovement : MonoBehaviour
     // Declara uma variável controls do tipo InputActions, que é uma classe gerada automaticamente pelo Input System quando criamos um Input Action no Unity.
     private InputActions inputActions;
 
+    private Transform myCamera;
+
     // Awake() é chamado antes do Start()
     private void Awake()
     {
@@ -19,14 +21,37 @@ public class PlayerMovement : MonoBehaviour
         controller = GetComponent<CharacterController>();
     }
 
+    private void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked; // Esconder e travar o cursor no centro da tela
+        // Obtém a referência à câmara principal.
+        myCamera = Camera.main.transform;
+    }
+
     // Update() é chamado a cada frame.
     private void Update()
     {
         // Cria um Vector3 usando o moveInput (x para esquerda/direita e y para frente/trás).
         Vector3 moveDirection = new Vector3(moveInput.x, 0, moveInput.y);
+
+        // Define a direção com base na direção e que a camera aponta
+        moveDirection = myCamera.TransformDirection(moveDirection);
+        moveDirection.y = 0;
+
         // Aplica a direção do movimento ao CharacterController.
         // Multiplica por Time.deltaTime para garantir que o movimento seja suavizado independentemente do FPS.
         controller.Move(moveDirection * moveSpeed * Time.deltaTime);
+        // Elimina o movimento vertical para evitar que o personagem seja deslocado verticalmente.
+        controller.Move(new Vector3(0, -9.81f, 0) * Time.deltaTime);
+
+        if (moveDirection != Vector3.zero)
+        {
+            // Quaternion.Slerp suaviza a rotação de um objeto em direção a uma nova direção desejada recebendo como parametro a rotação atual, rotação desejada e controle de velocidade da interpolação.
+            // Quaternion.LookRotation(moveDirection) cria uma rotação que faz o objeto olhar para a direção moveDirection
+            // Time.deltaTime * 10 é usado para suavizar a rotação, evitando que a rotação seja instantânea.
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDirection), Time.deltaTime * 10);
+        }
+
     }
 
     // OnEnable() é chamado automaticamente quando o script é ativado.
